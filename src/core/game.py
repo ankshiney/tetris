@@ -107,27 +107,31 @@ class Game:
         self._last_fullscreen = self.settings.fullscreen
         self._last_display_scale = self.settings.display_scale
         self._reset_session_state()
-        if self.settings.music_enabled:
+        if self.settings.music_enabled and not is_android():
             self.audio.start_music()
         if is_mobile():
             pygame.mouse.set_visible(False)
 
     def _create_display(self) -> None:
-        if is_android():
+        if is_android() or is_mobile():
             info = pygame.display.Info()
-            self.screen = pygame.display.set_mode(
-                (info.current_w, info.current_h),
-                pygame.FULLSCREEN,
-            )
+            w = info.current_w or WINDOW_WIDTH
+            h = info.current_h or WINDOW_HEIGHT
+            self.screen = pygame.display.set_mode((w, h), pygame.FULLSCREEN)
             return
         flags = pygame.SCALED
-        if self.settings.fullscreen:
-            info = pygame.display.Info()
-            self.screen = pygame.display.set_mode((info.current_w, info.current_h), flags | pygame.FULLSCREEN)
-        else:
-            w = max(WINDOW_WIDTH, int(WINDOW_WIDTH * self.settings.display_scale))
-            h = max(WINDOW_HEIGHT, int(WINDOW_HEIGHT * self.settings.display_scale))
-            self.screen = pygame.display.set_mode((w, h), flags)
+        try:
+            if self.settings.fullscreen:
+                info = pygame.display.Info()
+                self.screen = pygame.display.set_mode(
+                    (info.current_w, info.current_h), flags | pygame.FULLSCREEN
+                )
+            else:
+                w = max(WINDOW_WIDTH, int(WINDOW_WIDTH * self.settings.display_scale))
+                h = max(WINDOW_HEIGHT, int(WINDOW_HEIGHT * self.settings.display_scale))
+                self.screen = pygame.display.set_mode((w, h), flags)
+        except pygame.error:
+            self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
     def _toggle_fullscreen(self) -> None:
         self.settings.toggle_fullscreen()
@@ -800,6 +804,8 @@ class Game:
         pygame.display.flip()
 
     def run(self) -> None:
+        if is_android() and self.settings.music_enabled:
+            self.audio.start_music()
         while self.running:
             dt = clamp_dt(self.clock.tick(FPS) / 1000.0, MAX_DT)
             self.handle_events()

@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import pygame
 
 from config.settings import CELL_SIZE, ROW_FALL_DURATION
+from src.ui.fonts import get_font
 from src.utils.easing import ease_out_back, ease_out_cubic, lerp, smooth_damp
 
 
@@ -137,7 +138,7 @@ class ScorePopupManager:
 
     def __init__(self) -> None:
         self.popups: list[ScorePopup] = []
-        self.font = pygame.font.SysFont("consolas", 22, bold=True)
+        self.font = get_font(22, bold=True, family="mono")
 
     def spawn(self, text: str, x: float, y: float, color: tuple[int, int, int]) -> None:
         self.popups.append(ScorePopup(text, x, y, 1.1, 1.1, color, 0.85))

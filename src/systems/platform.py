@@ -8,8 +8,14 @@ import sys
 
 def is_android() -> bool:
     """True when running inside a python-for-android APK."""
-    if os.environ.get("ANDROID_ARGUMENT"):
+    if os.environ.get("ANDROID_ARGUMENT") or os.environ.get("ANDROID_PRIVATE"):
         return True
+    try:
+        import android  # type: ignore[import-untyped]  # noqa: F401
+
+        return True
+    except ImportError:
+        pass
     try:
         from jnius import autoclass  # type: ignore[import-untyped]
 
@@ -33,6 +39,13 @@ def configure_android_env() -> None:
     os.environ.setdefault("SDL_ANDROID_BACK_BUTTON", "0")
     os.environ.setdefault("SDL_MOUSE_TOUCH_EVENTS", "1")
     os.environ.setdefault("SDL_TOUCH_MOUSE_EVENTS", "1")
+    os.environ.setdefault("SDL_AUDIODRIVER", "android")
+    try:
+        import pygame
+
+        pygame.mixer.pre_init(frequency=22050, size=-16, channels=2, buffer=1024)
+    except Exception:
+        pass
 
 
 def android_version() -> str:

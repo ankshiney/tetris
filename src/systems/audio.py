@@ -6,6 +6,7 @@ import math
 import pygame
 
 from src.systems.music_tracks import MUSIC_TRACK_ORDER, build_track
+from src.systems.platform import is_android
 
 
 def _make_tone(
@@ -42,7 +43,8 @@ class AudioManager:
 
         try:
             if not pygame.mixer.get_init():
-                pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+                buffer = 1024 if is_android() else 512
+                pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=buffer)
             self._sounds = {
                 "move": _make_tone(280, 0.04, 0.12),
                 "rotate": _make_tone(420, 0.05, 0.15),
@@ -56,8 +58,9 @@ class AudioManager:
                 "hold": _make_tone(360, 0.06, 0.18),
                 "menu": _make_tone(520, 0.06, 0.12),
             }
-            for track_id in MUSIC_TRACK_ORDER:
-                self._tracks[track_id] = build_track(track_id)
+            if not is_android():
+                for track_id in MUSIC_TRACK_ORDER:
+                    self._tracks[track_id] = build_track(track_id)
             self.enabled = any(s is not None for s in self._sounds.values())
             self._music_channel = pygame.mixer.Channel(7)
         except pygame.error:
@@ -83,12 +86,17 @@ class AudioManager:
         else:
             self.stop_music()
 
+    def _ensure_track(self, track_id: str) -> pygame.mixer.Sound | None:
+        if track_id not in self._tracks:
+            self._tracks[track_id] = build_track(track_id)
+        return self._tracks.get(track_id)
+
     def start_music(self) -> None:
         if not self.enabled or not self.music_enabled or self._music_channel is None:
             return
-        music = self._tracks.get(self.music_track)
+        music = self._ensure_track(self.music_track)
         if music is None:
-            music = self._tracks.get("chill")
+            music = self._ensure_track("chill")
         if music is None:
             return
         self._music_channel.play(music, loops=-1)

@@ -10,6 +10,7 @@ import pygame
 
 from config.settings import BOARD_ORIGIN_X, BOARD_ORIGIN_Y, CELL_SIZE, COLS, HIDDEN_ROWS, MAX_PARTICLES
 import src.ui.colors as colors
+from src.ui.fonts import get_font
 from src.utils.easing import ease_out_cubic
 
 
@@ -150,7 +151,7 @@ class NotificationBanner:
         self.color = colors.TITLE_TEXT
         self.timer = 0.0
         self.duration = 0.0
-        self.font = pygame.font.SysFont("consolas", 36, bold=True)
+        self.font = get_font(36, bold=True, family="display")
 
     def show(
         self,
@@ -179,7 +180,7 @@ class NotificationBanner:
         h = max(1, int(text.get_height() * scale))
         scaled = pygame.transform.smoothscale(text, (w, h))
         scaled.set_alpha(int(255 * fade))
-        glow = pygame.font.SysFont("consolas", 36, bold=True).render(self.text, True, self.color)
+        glow = get_font(36, bold=True, family="display").render(self.text, True, self.color)
         glow.set_alpha(int(60 * fade))
         rect = scaled.get_rect(center=board_center)
         glow_rect = glow.get_rect(center=(board_center[0] + 1, board_center[1] + 1))
