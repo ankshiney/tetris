@@ -24,7 +24,7 @@ jobs:
             -v "${{ github.workspace }}:/home/user/hostcwd" \
             -w /home/user/hostcwd \
             kivy/buildozer \
-            buildozer -v android debug 2>&1 | tee buildozer.log
+            -v android debug 2>&1 | tee buildozer.log
           test "${PIPESTATUS[0]}" -eq 0
 
           mkdir -p bin
