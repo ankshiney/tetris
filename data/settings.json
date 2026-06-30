@@ -1,0 +1,11 @@
+{
+  "theme": "cyber",
+  "music_track": "ambient",
+  "music_volume": 0.3,
+  "sfx_volume": 0.58,
+  "music_enabled": true,
+  "fullscreen": false,
+  "particles_enabled": true,
+  "display_scale": 1.0,
+  "touch_controls": true
+}
