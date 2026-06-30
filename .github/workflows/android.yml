@@ -7,81 +7,31 @@ on:
 
 jobs:
   build-apk:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 120
-
-    env:
-      BUILDOZER_WARN_ON_ROOT: "0"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - name: Build with Buildozer (Docker)
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
         with:
-          distribution: temurin
-          java-version: "17"
+          command: buildozer -v android debug
+          buildozer_version: stable
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install system packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential git zip unzip openjdk-17-jdk \
-            autoconf automake libtool pkg-config \
-            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
-            cmake libffi-dev libssl-dev libsqlite3-dev \
-            ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
-
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install "Cython<3.0" "setuptools<71" "buildozer==1.5.0" appdirs colorama
-
-      - name: Cache Buildozer downloads
-        uses: actions/cache@v4
-        with:
-          path: |
-            .buildozer
-            ~/.buildozer
-          key: buildozer-${{ runner.os }}-v2-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            buildozer-${{ runner.os }}-v2-
-
-      - name: Build debug APK
-        run: |
-          set -euo pipefail
-          buildozer -v android debug 2>&1 | tee buildozer.log
-          test "${PIPESTATUS[0]}" -eq 0
-
-          mkdir -p bin
-          APK="$(find . -name '*debug*.apk' -type f | head -1 || true)"
-          if [ -z "$APK" ]; then
-            echo "ERROR: No APK produced. Searching tree..."
-            find . -name '*.apk' -type f || true
-            echo "---- tail buildozer.log ----"
-            tail -n 200 buildozer.log || true
-            exit 1
-          fi
-          cp "$APK" bin/tetris-debug.apk
-          ls -la bin/
-
-      - name: Upload build log
+      - name: Show build output
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: buildozer-log
-          path: buildozer.log
-          if-no-files-found: ignore
+        run: |
+          echo "Buildozer output file: ${{ steps.buildozer.outputs.filename }}"
+          ls -la bin/ 2>/dev/null || true
+          find . -name '*.apk' -type f 2>/dev/null || true
 
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: tetris-android-debug
-          path: bin/tetris-debug.apk
+          path: ${{ steps.buildozer.outputs.filename }}
           if-no-files-found: error
