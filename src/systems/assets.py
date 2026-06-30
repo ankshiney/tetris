@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pygame
 
-from src.systems.asset_generator import ASSETS_DIR, generate_all_assets
+from src.systems.asset_generator import generate_all_assets
+from src.systems.paths import assets_dir
 
 REQUIRED = ("menu_bg.png", "panel.png", "logo_glow.png", "pause_banner.png", "music_icon.png")
 
@@ -19,7 +20,7 @@ class AssetManager:
         self._ensure_assets()
 
     def _ensure_assets(self) -> None:
-        if not all((ASSETS_DIR / name).exists() for name in REQUIRED):
+        if not all((assets_dir() / name).exists() for name in REQUIRED):
             try:
                 generate_all_assets()
             except Exception:
@@ -28,11 +29,15 @@ class AssetManager:
     def get(self, name: str) -> pygame.Surface | None:
         if name in self._cache:
             return self._cache[name]
-        path = ASSETS_DIR / name
+        path = assets_dir() / name
         if not path.exists():
             return None
         try:
-            surf = pygame.image.load(str(path)).convert_alpha()
+            loaded = pygame.image.load(str(path))
+            try:
+                surf = loaded.convert_alpha()
+            except pygame.error:
+                surf = loaded.convert()
             self._cache[name] = surf
             return surf
         except pygame.error:

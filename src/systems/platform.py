@@ -4,18 +4,13 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
 
 def is_android() -> bool:
     """True when running inside a python-for-android APK."""
     if os.environ.get("ANDROID_ARGUMENT") or os.environ.get("ANDROID_PRIVATE"):
         return True
-    try:
-        import android  # type: ignore[import-untyped]  # noqa: F401
-
-        return True
-    except ImportError:
-        pass
     try:
         from jnius import autoclass  # type: ignore[import-untyped]
 
@@ -40,6 +35,7 @@ def configure_android_env() -> None:
     os.environ.setdefault("SDL_MOUSE_TOUCH_EVENTS", "1")
     os.environ.setdefault("SDL_TOUCH_MOUSE_EVENTS", "1")
     os.environ.setdefault("SDL_AUDIODRIVER", "android")
+    os.environ.setdefault("SDL_VIDEO_ALLOW_SCREENSAVER", "1")
     try:
         import pygame
 
@@ -59,3 +55,26 @@ def platform_label() -> str:
         ver = android_version()
         return f"Android {ver}" if ver else "Android"
     return f"{sys.platform}"
+
+
+def write_android_log(message: str) -> None:
+    """Persist crash text where adb logcat may be unavailable."""
+    if not is_android():
+        return
+    targets: list[Path] = []
+    private = os.environ.get("ANDROID_PRIVATE")
+    if private:
+        targets.append(Path(private) / "crash.log")
+    try:
+        from android.storage import app_storage_path  # type: ignore[import-untyped]
+
+        targets.append(Path(app_storage_path()) / "crash.log")
+    except Exception:
+        pass
+    for path in targets:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(message, encoding="utf-8")
+            return
+        except OSError:
+            continue

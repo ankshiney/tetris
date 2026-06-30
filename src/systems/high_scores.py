@@ -5,9 +5,6 @@ import json
 from config.settings import MAX_HIGH_SCORES
 from src.systems.paths import data_dir, highscores_file
 
-HIGHSCORES_FILE = highscores_file()
-
-
 class HighScores:
     """Keeps a sorted list of the best runs."""
 
@@ -16,10 +13,11 @@ class HighScores:
         self._load()
 
     def _load(self) -> None:
-        if not HIGHSCORES_FILE.exists():
+        path = highscores_file()
+        if not path.exists():
             return
         try:
-            with HIGHSCORES_FILE.open(encoding="utf-8") as f:
+            with path.open(encoding="utf-8") as f:
                 data = json.load(f)
             if isinstance(data, list):
                 self.entries = data[:MAX_HIGH_SCORES]
@@ -28,7 +26,7 @@ class HighScores:
 
     def _save(self) -> None:
         data_dir()
-        with HIGHSCORES_FILE.open("w", encoding="utf-8") as f:
+        with highscores_file().open("w", encoding="utf-8") as f:
             json.dump(self.entries[:MAX_HIGH_SCORES], f, indent=2)
 
     def is_high_score(self, score: int) -> bool:

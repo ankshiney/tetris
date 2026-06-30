@@ -1,10 +1,12 @@
 """Procedural generation of menu and UI image assets."""
 
-from pathlib import Path
-
 import pygame
 
-ASSETS_DIR = Path(__file__).resolve().parents[2] / "assets" / "images"
+from src.systems.paths import assets_dir
+
+
+def _assets_dir():
+    return assets_dir()
 
 
 def _gradient(size: tuple[int, int], top: tuple[int, int, int], bottom: tuple[int, int, int]) -> pygame.Surface:
@@ -18,7 +20,8 @@ def _gradient(size: tuple[int, int], top: tuple[int, int, int], bottom: tuple[in
 
 
 def generate_all_assets() -> None:
-    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+    out = _assets_dir()
+    out.mkdir(parents=True, exist_ok=True)
 
     menu_bg = _gradient((520, 680), (12, 14, 28), (24, 30, 52))
     for x in range(0, 520, 40):
@@ -48,8 +51,8 @@ def generate_all_assets() -> None:
     for i, h in enumerate((18, 26, 14, 22)):
         pygame.draw.rect(music, (20, 30, 50), (10 + i * 7, 36 - h, 4, h), border_radius=2)
 
-    pygame.image.save(menu_bg, str(ASSETS_DIR / "menu_bg.png"))
-    pygame.image.save(panel, str(ASSETS_DIR / "panel.png"))
-    pygame.image.save(logo, str(ASSETS_DIR / "logo_glow.png"))
-    pygame.image.save(pause, str(ASSETS_DIR / "pause_banner.png"))
-    pygame.image.save(music, str(ASSETS_DIR / "music_icon.png"))
+    pygame.image.save(menu_bg, str(out / "menu_bg.png"))
+    pygame.image.save(panel, str(out / "panel.png"))
+    pygame.image.save(logo, str(out / "logo_glow.png"))
+    pygame.image.save(pause, str(out / "pause_banner.png"))
+    pygame.image.save(music, str(out / "music_icon.png"))

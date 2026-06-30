@@ -2,16 +2,20 @@
 
 import traceback
 
-from src.core.game import Game
-from src.systems.platform import configure_android_env
+from src.systems.platform import configure_android_env, write_android_log
+
+# Configure SDL/Android before any module touches JNI, storage, or pygame display.
+configure_android_env()
 
 
 def main() -> None:
-    configure_android_env()
     try:
+        from src.core.game import Game
+
         game = Game()
         game.run()
     except Exception:
+        write_android_log(traceback.format_exc())
         traceback.print_exc()
         raise
 

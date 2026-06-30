@@ -60,9 +60,17 @@ class Game:
 
     def __init__(self) -> None:
         pygame.init()
+        try:
+            pygame.font.init()
+        except pygame.error:
+            pass
         self.settings = SettingsStore()
-        self.virtual = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
         self._create_display()
+        self.virtual = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+        try:
+            self.virtual = self.virtual.convert()
+        except pygame.error:
+            pass
         pygame.display.set_caption("Tetris")
         self.clock = pygame.time.Clock()
         self.running = True
@@ -114,10 +122,13 @@ class Game:
 
     def _create_display(self) -> None:
         if is_android() or is_mobile():
-            info = pygame.display.Info()
-            w = info.current_w or WINDOW_WIDTH
-            h = info.current_h or WINDOW_HEIGHT
-            self.screen = pygame.display.set_mode((w, h), pygame.FULLSCREEN)
+            try:
+                self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            except pygame.error:
+                info = pygame.display.Info()
+                w = info.current_w or WINDOW_WIDTH
+                h = info.current_h or WINDOW_HEIGHT
+                self.screen = pygame.display.set_mode((w, h), pygame.FULLSCREEN)
             return
         flags = pygame.SCALED
         try:
@@ -804,8 +815,6 @@ class Game:
         pygame.display.flip()
 
     def run(self) -> None:
-        if is_android() and self.settings.music_enabled:
-            self.audio.start_music()
         while self.running:
             dt = clamp_dt(self.clock.tick(FPS) / 1000.0, MAX_DT)
             self.handle_events()

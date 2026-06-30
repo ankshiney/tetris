@@ -9,7 +9,6 @@ from src.systems.platform import is_mobile
 from src.ui.colors import apply_theme
 from src.ui.themes import THEME_ORDER, THEMES
 
-SETTINGS_FILE = settings_file()
 DISPLAY_SCALES = (1.0, 1.15, 1.25, 1.5)
 
 DEFAULTS = {
@@ -30,6 +29,7 @@ MOBILE_DEFAULTS = {
     "touch_controls": True,
     "display_scale": 1.0,
     "particles_enabled": True,
+    "music_enabled": False,
 }
 
 
@@ -51,11 +51,12 @@ class SettingsStore:
         self._load()
 
     def _load(self) -> None:
-        if not SETTINGS_FILE.exists():
+        path = settings_file()
+        if not path.exists():
             apply_theme(self.theme)
             return
         try:
-            with SETTINGS_FILE.open(encoding="utf-8") as f:
+            with path.open(encoding="utf-8") as f:
                 data = json.load(f)
             if isinstance(data, dict):
                 self.theme = data.get("theme", self.theme)
@@ -90,7 +91,7 @@ class SettingsStore:
             "display_scale": self.display_scale,
             "touch_controls": self.touch_controls,
         }
-        with SETTINGS_FILE.open("w", encoding="utf-8") as f:
+        with settings_file().open("w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
 
     def _cycle_list(self, current: str, order: list[str], direction: int) -> str:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -13,20 +14,31 @@ _BUNDLED_DATA = _PROJECT_ROOT / "data"
 
 
 def project_root() -> Path:
+    private = os.environ.get("ANDROID_PRIVATE")
+    if private:
+        return Path(private)
     return _PROJECT_ROOT
+
+
+def assets_dir() -> Path:
+    return project_root() / "assets" / "images"
 
 
 def data_dir() -> Path:
     """Persistent storage for settings and high scores."""
     if is_android():
-        try:
-            from android.storage import app_storage_path  # type: ignore[import-untyped]
+        private = os.environ.get("ANDROID_PRIVATE")
+        if private:
+            path = Path(private) / "userdata"
+        else:
+            try:
+                from android.storage import app_storage_path  # type: ignore[import-untyped]
 
-            path = Path(app_storage_path())
-        except Exception:
-            path = _PROJECT_ROOT / "data"
+                path = Path(app_storage_path())
+            except Exception:
+                path = project_root() / "data"
     else:
-        path = _PROJECT_ROOT / "data"
+        path = project_root() / "data"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -43,11 +55,12 @@ def seed_android_data() -> None:
     """Copy bundled defaults into app storage on first Android launch."""
     if not is_android():
         return
+    bundled = project_root() / "data"
     target = data_dir()
-    if not _BUNDLED_DATA.exists():
+    if not bundled.exists():
         return
     for name in ("settings.json", "highscores.json"):
-        src = _BUNDLED_DATA / name
+        src = bundled / name
         dst = target / name
         if src.exists() and not dst.exists():
             shutil.copy2(src, dst)
@@ -59,7 +72,7 @@ def seed_android_data() -> None:
                         "music_track": "ambient",
                         "music_volume": 0.3,
                         "sfx_volume": 0.58,
-                        "music_enabled": True,
+                        "music_enabled": False,
                         "fullscreen": True,
                         "particles_enabled": True,
                         "display_scale": 1.0,
