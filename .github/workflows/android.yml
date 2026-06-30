@@ -16,27 +16,8 @@ jobs:
 
       - name: Build APK with prebuilt Buildozer Docker image
         run: |
-          set -euo pipefail
-          mkdir -p .buildozer-global
-          docker pull kivy/buildozer
-          docker run --rm \
-            -v "${{ github.workspace }}/.buildozer-global:/home/user/.buildozer" \
-            -v "${{ github.workspace }}:/home/user/hostcwd" \
-            -w /home/user/hostcwd \
-            kivy/buildozer \
-            -v android debug 2>&1 | tee buildozer.log
-          test "${PIPESTATUS[0]}" -eq 0
-
-          mkdir -p bin
-          APK="$(find . -name '*debug*.apk' -type f | head -1 || true)"
-          if [ -z "$APK" ]; then
-            echo "No APK found. Last 100 log lines:"
-            tail -n 100 buildozer.log || true
-            find . -name '*.apk' -type f || true
-            exit 1
-          fi
-          cp "$APK" bin/tetris-debug.apk
-          ls -la bin/
+          chmod +x scripts/build-android-ci.sh scripts/patch-pyjnius.sh
+          bash scripts/build-android-ci.sh
 
       - name: Upload build log
         if: always()
