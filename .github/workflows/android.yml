@@ -7,8 +7,11 @@ on:
 
 jobs:
   build-apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 120
+
+    env:
+      BUILDOZER_WARN_ON_ROOT: "0"
 
     steps:
       - name: Checkout
@@ -29,16 +32,40 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk autoconf libtool pkg-config \
-            zlib1g-dev libncurses-dev cmake libffi-dev libssl-dev
+            build-essential git zip unzip openjdk-17-jdk \
+            autoconf automake libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev libsqlite3-dev \
+            ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
 
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip
-          pip install "Cython<3.0" "setuptools<71" buildozer
+          pip install "Cython<3.0" "setuptools<71" buildozer appdirs colorama
+
+      - name: Cache Buildozer downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            .buildozer
+            ~/.buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-${{ runner.os }}-
 
       - name: Build debug APK
-        run: buildozer -v android debug
+        run: |
+          export USE_SDK_WRAPPER=1
+          buildozer -v android debug 2>&1 | tee buildozer.log
+          ls -la bin/ || true
+          tail -n 80 buildozer.log || true
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildozer-log
+          path: buildozer.log
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
