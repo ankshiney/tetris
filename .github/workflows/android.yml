@@ -41,7 +41,7 @@ jobs:
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip
-          pip install "Cython<3.0" "setuptools<71" buildozer appdirs colorama
+          pip install "Cython<3.0" "setuptools<71" "buildozer==1.5.0" appdirs colorama
 
       - name: Cache Buildozer downloads
         uses: actions/cache@v4
@@ -49,27 +49,39 @@ jobs:
           path: |
             .buildozer
             ~/.buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-${{ runner.os }}-v2-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-${{ runner.os }}-
+            buildozer-${{ runner.os }}-v2-
 
       - name: Build debug APK
         run: |
-          export USE_SDK_WRAPPER=1
+          set -euo pipefail
           buildozer -v android debug 2>&1 | tee buildozer.log
-          ls -la bin/ || true
-          tail -n 80 buildozer.log || true
+          test "${PIPESTATUS[0]}" -eq 0
 
-      - name: Upload build log on failure
-        if: failure()
+          mkdir -p bin
+          APK="$(find . -name '*debug*.apk' -type f | head -1 || true)"
+          if [ -z "$APK" ]; then
+            echo "ERROR: No APK produced. Searching tree..."
+            find . -name '*.apk' -type f || true
+            echo "---- tail buildozer.log ----"
+            tail -n 200 buildozer.log || true
+            exit 1
+          fi
+          cp "$APK" bin/tetris-debug.apk
+          ls -la bin/
+
+      - name: Upload build log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: buildozer-log
           path: buildozer.log
+          if-no-files-found: ignore
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: tetris-android-debug
-          path: bin/*.apk
+          path: bin/tetris-debug.apk
           if-no-files-found: error
